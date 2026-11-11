@@ -1,0 +1,5 @@
+-r requirements-forecast.txt
+matplotlib==3.10.8
+nbformat==5.10.4
+nbclient==0.10.4
+ipykernel==7.2.0

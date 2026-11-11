@@ -1,0 +1,28 @@
+# Local environments and editor state
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.DS_Store
+
+# Credentials
+.env
+.env.*
+*.pem
+*.key
+
+# Source data and generated artifacts stay local pending publication review.
+data/
+reports/
+models/
+*.csv
+*.parquet
+*.joblib
+*.pkl
+*.pickle
+*.zip
+*.log
+/customer_interactions.txt
+/incident_knowledge_base.txt
+/Capstone 1.pdf
