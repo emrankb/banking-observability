@@ -318,3 +318,28 @@ permissions before enabling it. A cited model draft is not a verified diagnosis.
 The second suite needs the saved artifacts in Codespaces; neither suite makes
 an external model call. See `docs/incident_assistant.md` and
 `notebooks/07_incident_assistant.ipynb`.
+
+## Additional five-minute KPI forecasts
+
+The processing-time forecast is complemented by direct `t+5` forecasts for CPU,
+memory, database connection-pool usage, and NEFT, IMPS, and RTGS success rates.
+Fit and test them using the existing monitoring train/test files:
+
+```bash
+.venv/bin/python scripts/train_kpi_forecasts.py --data-dir data/raw
+.venv/bin/python tests/test_kpi_forecasting.py --data-dir data/raw
+```
+
+Replay an origin through the saved model:
+
+```bash
+.venv/bin/python scripts/predict_kpi.py \
+  --target cpu_utilization \
+  --history data/raw/infrastructure_metrics.csv \
+  --as-of "2025-10-25 14:24:00"
+```
+
+Six selected artifacts go under `models/kpi_5min/`, with comparisons in
+`reports/kpi_forecast/`. Existing outputs are not overwritten. The results are
+point readings with MAE in percentage points, not calibrated risk forecasts.
+See `docs/kpi_forecasting.md` and `notebooks/08_kpi_forecasting.ipynb`.
