@@ -397,3 +397,23 @@ do not expose them publicly. Streamlit reads
 
 Read `docs/dashboard.md` for the five views, replay boundaries, and test scope.
 This is historical replay, not a live banking feed or a deployed service.
+
+## Docker Compose deployment
+
+The historical API and Streamlit dashboard can also run as two local services.
+Keep the original CSVs in ignored `data/raw/` and the saved artifacts in ignored
+`models/`; both directories are mounted read-only and are not put in the image.
+
+```bash
+docker compose config --quiet
+.venv/bin/python tests/test_deployment.py
+docker compose up --build --detach --wait
+.venv/bin/python scripts/smoke_deployment.py
+```
+
+The API is published at `127.0.0.1:18000` and the dashboard at
+`127.0.0.1:18501` so they do not conflict with the development servers.
+Keep forwarded ports **Private** in Codespaces. There is no public authentication
+or live data feed. Read `docs/deployment.md` for requirements, model compatibility,
+troubleshooting, and shutdown instructions. Run the Compose smoke test and
+inspect the dashboard in a browser before relying on the deployment.
