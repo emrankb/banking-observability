@@ -1,13 +1,31 @@
-# Banking observability
+# Banking operations observability
 
-A project for investigating payment-channel performance, forecasting processing
-time, and explaining operational incidents from metrics and application logs.
+This capstone looks at payment-channel performance alongside infrastructure readings and application logs. It uses the supplied banking records to forecast the next five-minute KPI readings, flag unusual conditions, group recurring log messages, and investigate a recorded incident with supporting sources.
 
-The repository includes dataset inspection, relationship checks, five-minute
-processing-time and KPI forecasts, incident triage, anomaly detection, log
-grouping, local knowledge retrieval, and incident evidence assembly.
-The API and Streamlit dashboard replay recorded data. There is no live
-feed or deployed service yet.
+The application runs locally with FastAPI and Streamlit, including through Docker Compose. It works with historical CSV files rather than a live banking feed. The incident assistant can also produce a cited model-written draft through an explicitly enabled CLI request; that draft can be reviewed in the dashboard.
+
+## Project layout
+
+The main parts are:
+
+- **Data and training:** `scripts/` inspects the supplied CSVs, fits the forecasting and detection models, clusters logs, and builds the knowledge index. Saved outputs stay in ignored `models/` and `reports/` directories.
+- **Backend:** `banking_observability/` contains the forecasting, anomaly detection, log analysis, retrieval, and incident workflow code. FastAPI exposes historical readings and inference results.
+- **Dashboard:** `streamlit_app.py` shows monitoring, forecasts, logs, runbooks, and incident replay. It reads the local API instead of loading or training models in the browser.
+- **Incident explanation:** `scripts/ask_incident.py` can request a structured draft from an external model when explicitly enabled. Streamlit checks an imported JSON draft against the recorded evidence; the API does not generate text remotely.
+
+## Run the local demo
+
+Start with the original CSV files under `data/raw/` and the trained artifacts under `models/`. These are not part of the Git repository. Open the project in Codespaces and let the setup create `.venv` before running the commands below.
+
+```bash
+docker compose up --build --detach --wait
+docker compose ps
+.venv/bin/python scripts/smoke_deployment.py
+```
+
+Open the **private** Codespaces port `18501` for Streamlit. FastAPI uses host port `18000`. In **Incident replay**, select `2025-10-25 18:01:00` and use the question `network timeout latency` to inspect the local evidence. A separately generated JSON draft can be imported in the same view. `docs/capstone_readiness.md` has the demonstration order and recorded verification results; `docs/deployment.md` covers setup and file-permission issues.
+
+The services do not need a model API key for normal dashboard use, and neither port should be made public.
 
 ## Development environment
 
@@ -26,16 +44,16 @@ For local development with Python 3.13 and Bash, run the same setup script:
 bash .devcontainer/setup.sh
 ```
 
-The direct package versions match the existing forecasting checkpoint. They are
+The pinned direct package versions are aligned with the saved models. They are
 not a complete transitive dependency lock. The container tag fixes the Python
 minor version and Debian release, but not an immutable image digest.
 
 ## Data
 
 Keep the original datasets in `data/raw/`. Setup creates this directory but
-never downloads or generates data. Raw data, generated reports, and models are
-excluded from version control because redistribution rights have not been
-established. Review notebook outputs before publishing them.
+never downloads or generates data. Raw data, generated reports, and saved models
+are intentionally excluded from the source repository. They must be supplied
+separately for a full demo. Review notebook outputs before publishing them.
 
 The inspection and analysis scripts require these three files:
 
@@ -92,7 +110,7 @@ in the workspace and generate the report:
 .venv/bin/python scripts/write_forecast_report.py --data-dir data/raw
 ```
 
-An existing checkpoint is not replaced unless `--overwrite` is passed to the
+An existing saved forecast is not replaced unless `--overwrite` is passed to the
 training command. Reports go to `reports/forecast/`; the selected artifact and
 learned comparators go to `models/latency_5min/`. They remain outside Git.
 
@@ -287,7 +305,7 @@ log, anomaly, and FAISS artifacts already trained in this Codespace:
 ```
 
 See `docs/incident_evidence.md` and `notebooks/06_incident_evidence.ipynb`.
-The language-model interface and dashboard are not part of this checkpoint.
+The LangGraph assistant and the dashboard use this same evidence assembly.
 
 ## Incident assistant
 
@@ -363,7 +381,7 @@ The server binds to `127.0.0.1:8000`. It has no authentication and should not
 be exposed to a public network. Check `/api/v1/health` for local artifact
 presence, and `/openapi.json` for request/response schemas. Read `docs/api.md`
 for endpoint examples and limits. The API does not call an external language
-model. Remote generation and Docker deployment are separate checkpoints.
+model; the optional generation command is run separately from the API.
 
 ## Streamlit dashboard
 
@@ -396,7 +414,7 @@ do not expose them publicly. Streamlit reads
 ```
 
 Read `docs/dashboard.md` for the five views, replay boundaries, and test scope.
-This is historical replay, not a live banking feed or a deployed service.
+The local deployment is working with historical replay; it is not a live banking feed.
 
 ## Docker Compose deployment
 
@@ -439,6 +457,8 @@ or automatically retried.
 ```
 
 See `docs/incident_generation.md` for the opt-in command and
-`docs/capstone_readiness.md` for a submission demonstration and known limitations.
-Run the integration suite in Codespaces and verify external generation only with
-approved data. Keep all data, reports, and API credentials outside Git.
+`docs/capstone_readiness.md` for the demonstration and known limitations.
+A live `gpt-5.4-mini` request for `2025-10-25 18:01:00` produced a draft that
+passed validation and displayed in Streamlit. This verifies the demo path,
+not the correctness of every explanation. Keep data, reports, and API credentials
+outside Git.
