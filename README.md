@@ -5,8 +5,8 @@ time, and explaining operational incidents from metrics and application logs.
 
 The repository includes dataset inspection, relationship checks, five-minute
 processing-time forecasts, incident-record triage, monitoring anomaly checks, and
-log grouping, and local knowledge retrieval.
-There is no incident-generation assistant, API, or dashboard yet.
+log grouping, local knowledge retrieval, and incident evidence assembly.
+There is no language-model incident assistant, API, or dashboard yet.
 
 ## Development environment
 
@@ -260,3 +260,30 @@ The source suite does not require FAISS. The retrieval suite requires the actual
 native index and fails when the package is unavailable. Run
 `notebooks/05_knowledge_retrieval.ipynb` after building the index to inspect results
 and source references. See `docs/retrieval.md` for the cutoff and search limits.
+
+## Incident evidence
+
+Inspect a recorded monitoring minute alongside recent logs, the saved anomaly
+assessment, and relevant passages from the local knowledge index:
+
+```bash
+.venv/bin/python scripts/investigate_incident.py \
+  --as-of "2025-10-25 18:01:00" \
+  --question "network timeout latency"
+```
+
+The command reads existing artifacts from `models/` and source files from
+`data/raw/`. It does not retrain anything or write a report. The response keeps
+observed KPI values, classified log messages, monitoring review flags, and
+runbook passages separate. It makes no root-cause claim.
+
+The first test suite needs only the original CSVs. The second loads the saved
+log, anomaly, and FAISS artifacts already trained in this Codespace:
+
+```bash
+.venv/bin/python tests/test_incident_evidence.py --data-dir data/raw
+.venv/bin/python tests/test_investigation.py --data-dir data/raw
+```
+
+See `docs/incident_evidence.md` and `notebooks/06_incident_evidence.ipynb`.
+The language-model interface and dashboard are not part of this checkpoint.
