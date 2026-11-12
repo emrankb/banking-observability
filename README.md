@@ -427,8 +427,10 @@ FastAPI and Streamlit never initiate a model request. The imported JSON is check
 against freshly assembled evidence and source references, then displayed as an
 **unverified analyst draft**, not as a confirmed cause or resolution.
 Generated claim lists are limited to five entries each, with one to four
-distinct evidence IDs per entry. Invalid model responses are rejected rather
-than trimmed or automatically retried.
+distinct evidence IDs per entry. The response schema allows monitoring and log
+references in observations; runbook references belong in possible explanations
+or suggested checks. Invalid model responses are rejected rather than trimmed
+or automatically retried.
 
 ```bash
 .venv/bin/python tests/test_incident_drafts.py
