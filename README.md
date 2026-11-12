@@ -6,8 +6,8 @@ time, and explaining operational incidents from metrics and application logs.
 The repository includes dataset inspection, relationship checks, five-minute
 processing-time and KPI forecasts, incident triage, anomaly detection, log
 grouping, local knowledge retrieval, and incident evidence assembly.
-The API serves local historical replay. There is no live feed, Streamlit
-dashboard, or deployed service yet.
+The API and Streamlit dashboard replay recorded data. There is no live
+feed or deployed service yet.
 
 ## Development environment
 
@@ -363,4 +363,37 @@ The server binds to `127.0.0.1:8000`. It has no authentication and should not
 be exposed to a public network. Check `/api/v1/health` for local artifact
 presence, and `/openapi.json` for request/response schemas. Read `docs/api.md`
 for endpoint examples and limits. The API does not call an external language
-model; remote generation, Streamlit, and Docker are separate checkpoints.
+model. Remote generation and Docker deployment are separate checkpoints.
+
+## Streamlit dashboard
+
+The Streamlit dashboard reads the local FastAPI service and displays historical
+KPI trends, saved five-minute forecasts, classified logs, runbook matches, and
+incident evidence for a selected recorded minute. The incident simulator
+replays actual observations; it does not inject synthetic incidents.
+
+Install the dashboard dependencies and start the API in one terminal:
+
+```bash
+.venv/bin/python -m pip install -r requirements-dashboard.txt
+.venv/bin/python scripts/serve_api.py
+```
+
+In a second terminal:
+
+```bash
+.venv/bin/python scripts/serve_dashboard.py
+```
+
+Open `http://127.0.0.1:8501` locally, or use the private port-8501 forward
+in Codespaces. Both servers are bound to loopback and have no authentication;
+do not expose them publicly. Streamlit reads
+`BANKING_API_URL` if set, otherwise `http://127.0.0.1:8000`.
+
+```bash
+.venv/bin/python tests/test_dashboard.py
+.venv/bin/python tests/test_dashboard_integration.py
+```
+
+Read `docs/dashboard.md` for the five views, replay boundaries, and test scope.
+This is historical replay, not a live banking feed or a deployed service.
