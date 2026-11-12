@@ -417,3 +417,23 @@ Keep forwarded ports **Private** in Codespaces. There is no public authenticatio
 or live data feed. Read `docs/deployment.md` for requirements, model compatibility,
 troubleshooting, and shutdown instructions. Run the Compose smoke test and
 inspect the dashboard in a browser before relying on the deployment.
+
+## Optional model-generated incident briefing
+
+The dashboard's **Incident replay** view can review a model-generated explanation
+produced separately by `scripts/ask_incident.py`. Remote generation requires an
+API key, model name, and explicit `--allow-external-data` consent from the operator;
+FastAPI and Streamlit never initiate a model request. The imported JSON is checked
+against freshly assembled evidence and source references, then displayed as an
+**unverified analyst draft**, not as a confirmed cause or resolution.
+
+```bash
+.venv/bin/python tests/test_incident_drafts.py
+.venv/bin/python tests/test_incident_draft_api.py
+.venv/bin/python tests/test_incident_draft_integration.py
+```
+
+See `docs/incident_generation.md` for the opt-in command and
+`docs/capstone_readiness.md` for a submission demonstration and known limitations.
+Run the integration suite in Codespaces and verify external generation only with
+approved data. Keep all data, reports, and API credentials outside Git.

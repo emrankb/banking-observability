@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, time
+import hashlib
 
 import pandas as pd
 import streamlit as st
@@ -11,6 +12,7 @@ from banking_observability.dashboard import (
     evidence_links, forecast_fields, monitoring_frame, recorded_minutes,
     source_date_time, summary_by_metric,
 )
+from banking_observability.incident_drafts import MAX_DRAFT_BYTES, read_draft_json
 
 
 @st.cache_resource(show_spinner=False)
@@ -181,6 +183,53 @@ def show_incident_replay(api: DashboardAPI, as_of: str) -> None:
         if result.get("model_explanation") is not None:
             st.error("Unexpected model output in local evidence-only mode.")
 
+    st.divider()
+    st.subheader("Model-generated explanation · optional import")
+    st.caption("Generate a JSON briefing separately with ask_incident.py, a model ID, and explicit "
+               "external-data permission. Import it here for source-reference checks. "
+               "This dashboard makes no external model requests.")
+    uploaded = st.file_uploader("Import a JSON briefing", type=["json"], key="incident_draft_import")
+    if uploaded is not None:
+        content = uploaded.getvalue()
+        fingerprint = hashlib.sha256(content).hexdigest()
+        if len(content) > MAX_DRAFT_BYTES:
+            st.error("The JSON file is larger than 64 KiB.")
+        elif not result:
+            st.info("Assemble the evidence briefing first, then check the imported draft.")
+        else:
+            if st.button("Check draft against recorded evidence", type="secondary"):
+                draft = query(lambda: read_draft_json(content))
+                if draft is not None:
+                    verified = query(lambda: api.check_draft(
+                        question=result["question"], as_of=as_of, draft=draft))
+                    if verified is not None:
+                        st.session_state["checked_incident_draft"] = verified
+                        st.session_state["checked_incident_draft_hash"] = fingerprint
+            checked = st.session_state.get("checked_incident_draft")
+            if (checked is not None
+                    and st.session_state.get("checked_incident_draft_hash") == fingerprint
+                    and checked.get("as_of") == as_of
+                    and checked.get("question") == result.get("question")):
+                st.warning("Draft with checked citation IDs. No root cause or remediation is confirmed.")
+                explanation = checked["model_explanation"]
+                st.write("**Draft summary**")
+                st.write(explanation["summary"])
+                for field, title in (("observations", "Observations"),
+                                     ("hypotheses", "Possible explanations"),
+                                     ("next_checks", "Suggested checks")):
+                    st.write(f"**{title}**")
+                    if not explanation[field]:
+                        st.caption("No items in this section.")
+                    for claim in explanation[field]:
+                        st.write(claim["text"])
+                        for evidence_id, ref in zip(claim["evidence_ids"], claim["source_references"]):
+                            location = (f"row {ref['csv_row']}" if "csv_row" in ref
+                                        else f"lines {ref['line_start']}–{ref['line_end']}")
+                            st.caption(f"{evidence_id} · {ref['path']} · {location}")
+                st.write("**Uncertainty**")
+                st.write(explanation["uncertainty"])
+                st.caption(checked["limitation"])
+
 
 def main() -> None:
     st.set_page_config(page_title="Banking operations | Historical replay", page_icon="📈",
@@ -235,7 +284,7 @@ def main() -> None:
     with tabs[4]:
         show_incident_replay(api, replay)
     st.divider()
-    st.caption("Historical replay only · No public authentication · External model generation disabled")
+    st.caption("Historical replay only · No public authentication · External generation disabled in dashboard")
 
 
 if __name__ == "__main__":

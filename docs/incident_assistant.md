@@ -54,3 +54,5 @@ The model is asked for structured text. The validator rejects unknown evidence I
 The first suite uses the original monitoring CSV to check the response schema, source references, and external-data permission. The second requires LangGraph and the saved models and FAISS index in Codespaces. Neither suite makes an external API request. Performance on unfamiliar questions and model-generated explanations remains unmeasured.
 
 This is a historical analysis command, not a deployed incident-response agent. See `docs/incident_evidence.md` for the data alignment and model-transfer limitations.
+
+The optional model-generated JSON can also be imported in the Streamlit incident replay after local source-reference validation; see `docs/incident_generation.md`. The imported file and its model provenance are not independently authenticated.
