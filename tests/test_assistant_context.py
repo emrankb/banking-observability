@@ -96,11 +96,78 @@ class ContextTests(unittest.TestCase):
                 )
         self.assertEqual(explanation, self.response())
         settings = client.responses.create.call_args.kwargs
-        self.assertEqual(settings["text"]["format"]["schema"], response_schema())
+        self.assertEqual(settings["text"]["format"]["schema"], response_schema(self.context))
         self.assertTrue(settings["text"]["format"]["strict"])
         self.assertFalse(settings["store"])
         self.assertIn("at most five", settings["instructions"])
         self.assertIn("one to four distinct", settings["instructions"])
+
+
+    def test_remote_schema_limits_claim_lengths(self):
+        fields = response_schema(self.context)["properties"]
+        for field in ("summary", "uncertainty"):
+            self.assertEqual(fields[field]["minLength"], 1)
+            self.assertEqual(fields[field]["maxLength"], 700)
+        for field in ("observations", "hypotheses", "next_checks"):
+            text_field = fields[field]["items"]["properties"]["text"]
+            self.assertEqual(text_field["minLength"], 1)
+            self.assertEqual(text_field["maxLength"], 420)
+
+    def test_schema_restricts_observations_but_not_hypotheses_or_checks(self):
+        context = {**self.context, "source_items": [
+            *self.context["source_items"],
+            {"id": "log:example", "kind": "log"},
+            {"id": "runbook:example", "kind": "runbook"},
+        ]}
+        schema = response_schema(context)
+        allowed = {
+            section: schema["properties"][section]["items"]
+                ["properties"]["evidence_ids"]["items"]["enum"]
+            for section in ("observations", "hypotheses", "next_checks")
+        }
+        self.assertEqual(allowed["observations"], [self.mid, "log:example"])
+        self.assertEqual(allowed["hypotheses"], [self.mid, "log:example", "runbook:example"])
+        self.assertEqual(allowed["next_checks"], allowed["hypotheses"])
+
+    def test_rejects_runbook_citation_even_when_combined_with_metric(self):
+        context = {**self.context, "source_items": [
+            *self.context["source_items"],
+            {"id": "runbook:example", "kind": "runbook", "source": {"path": "knowledge/runbooks.md"}},
+        ]}
+        for ids in (["runbook:example"], [self.mid, "runbook:example"]):
+            with self.subTest(evidence_ids=ids):
+                reply = self.response()
+                reply["observations"][0]["evidence_ids"] = ids
+                with self.assertRaisesRegex(ValueError, "Observations cannot cite runbook"):
+                    check_generated_reply(reply, context)
+
+    def test_response_schema_rejects_missing_observation_sources(self):
+        context = {**self.context, "source_items": [
+            {"id": "runbook:example", "kind": "runbook"},
+        ]}
+        with self.assertRaisesRegex(ValueError, "distinct source evidence IDs"):
+            response_schema(context)
+
+    def test_remote_mock_checks_exact_section_restrictions(self):
+        context = {**self.context, "source_items": [
+            *self.context["source_items"],
+            {"id": "runbook:example", "kind": "runbook", "source": {"path": "knowledge/runbooks.md"}},
+        ]}
+        client = Mock()
+        client.responses.create.return_value = SimpleNamespace(
+            status="completed", output_text=json.dumps(self.response()),
+        )
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "offline-test-placeholder"}):
+            with patch("openai.OpenAI", return_value=client):
+                generated = openai_explanation(context, model="offline-test-model", send_external=True)
+        checked = check_generated_reply(generated, context)
+        self.assertEqual(checked["observations"][0]["evidence_ids"], [self.mid])
+        req = client.responses.create.call_args.kwargs
+        schema = req["text"]["format"]["schema"]
+        allowed_observations = schema["properties"]["observations"]["items"] \
+            ["properties"]["evidence_ids"]["items"]["enum"]
+        self.assertNotIn("runbook:example", allowed_observations)
+        self.assertIn("NEVER runbook IDs", req["instructions"])
 
     def test_real_metric_reference_passes_validation(self):
         result=check_generated_reply(self.response(),self.context)
