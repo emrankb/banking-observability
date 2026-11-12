@@ -287,3 +287,34 @@ log, anomaly, and FAISS artifacts already trained in this Codespace:
 
 See `docs/incident_evidence.md` and `notebooks/06_incident_evidence.ipynb`.
 The language-model interface and dashboard are not part of this checkpoint.
+
+## Incident assistant
+
+The LangGraph workflow uses saved monitoring, log, and FAISS artifacts to create a
+source-linked investigation briefing. Install the additional dependencies:
+
+```bash
+.venv/bin/python -m pip install -r requirements-assistant.txt
+```
+
+Run the local evidence-only route without an API key:
+
+```bash
+.venv/bin/python scripts/ask_incident.py \
+  --as-of "2025-10-25 18:01:00" \
+  --question "network timeout latency"
+```
+
+The optional model route requires an API key, a model ID, and an explicit
+`--allow-external-data` flag. That route sends a bounded set of monitoring
+readings, normalized logs, and retrieved runbook text to the API. Review data
+permissions before enabling it. A cited model draft is not a verified diagnosis.
+
+```bash
+.venv/bin/python tests/test_assistant_context.py --data-dir data/raw
+.venv/bin/python tests/test_assistant_workflow.py --data-dir data/raw
+```
+
+The second suite needs the saved artifacts in Codespaces; neither suite makes
+an external model call. See `docs/incident_assistant.md` and
+`notebooks/07_incident_assistant.ipynb`.
