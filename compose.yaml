@@ -1,0 +1,85 @@
+# Both services share one local image; nothing downloads or generates source data.
+x-runtime: &runtime
+  image: banking-observability:local
+  build:
+    context: .
+    dockerfile: Dockerfile
+  init: true
+  read_only: true
+  user: "10001:10001"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  environment: &common-environment
+    PYTHONDONTWRITEBYTECODE: "1"
+    PYTHONUNBUFFERED: "1"
+    OPENBLAS_NUM_THREADS: "1"
+    OMP_NUM_THREADS: "1"
+    MKL_NUM_THREADS: "1"
+  volumes:
+    - type: bind
+      source: ./data/raw
+      target: /app/data/raw
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ./models
+      target: /app/models
+      read_only: true
+      bind:
+        create_host_path: false
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,size=268435456
+
+services:
+  api:
+    <<: *runtime
+    command:
+      - python
+      - -m
+      - uvicorn
+      - banking_observability.api:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --no-access-log
+    ports:
+      - "127.0.0.1:${BANKING_API_PORT:-18000}:8000"
+    healthcheck:
+      test: [CMD, python, scripts/check_container_ready.py, api]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 45s
+
+  dashboard:
+    <<: *runtime
+    environment:
+      <<: *common-environment
+      BANKING_API_URL: http://api:8000
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+    command:
+      - python
+      - -m
+      - streamlit
+      - run
+      - streamlit_app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --server.fileWatcherType=none
+      - --browser.gatherUsageStats=false
+    ports:
+      - "127.0.0.1:${BANKING_DASHBOARD_PORT:-18501}:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, scripts/check_container_ready.py, dashboard]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 45s
