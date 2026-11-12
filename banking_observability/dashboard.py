@@ -143,6 +143,15 @@ class DashboardAPI:
             "include_historical_incidents": bool(include_historical)})
 
 
+    def check_draft(self, *, question: str, as_of: str, draft: dict) -> dict:
+        if not isinstance(question, str) or not question.strip() or len(question) > 1000:
+            raise ValueError("An investigation question is required.")
+        if not isinstance(draft, dict):
+            raise ValueError("Select a JSON incident draft.")
+        return self._request("POST", "/api/v1/investigations/check-draft", payload={
+            "question": question.strip(), "as_of": recorded_minute(as_of), "draft": draft})
+
+
 def monitoring_frame(response: dict) -> pd.DataFrame:
     """Create a time-indexed frame from original API values, without interpolation."""
     rows = response.get("rows")

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 import re
 from pathlib import Path
 from typing import Literal
@@ -52,6 +53,11 @@ class KnowledgeQuery(FixedInput):
 class Investigation(Origin):
     question: str = Field(min_length=1, max_length=1000)
     include_historical_incidents: bool = False
+
+
+class ImportedDraft(Origin):
+    question: str = Field(min_length=1, max_length=1000)
+    draft: dict
 
 
 def source_minute(value: str) -> pd.Timestamp:
@@ -253,6 +259,24 @@ def create_app(root: Path | None = None) -> FastAPI:
                 model=None, allow_external_data=False,
             )
         return call(build)
+
+    @api.post('/api/v1/investigations/check-draft')
+    def check_draft(request: ImportedDraft):
+        def verify():
+            from .incident_assistant import prepare_context
+            from .incident_drafts import MAX_DRAFT_BYTES, validate_imported_draft
+            from .incident_evidence import assemble_investigation
+            if len(json.dumps(request.draft, ensure_ascii=False, allow_nan=False).encode('utf-8')) > MAX_DRAFT_BYTES:
+                raise ValueError('The imported draft is too large.')
+            origin = source_minute(request.as_of).isoformat()
+            packet = assemble_investigation(
+                data, question=request.question, as_of=origin,
+                index_dir=models / 'knowledge',
+                log_model_dir=models / 'log_clustering',
+                anomaly_model_dir=models / 'detection' / 'monitoring_anomaly',
+            )
+            return validate_imported_draft(request.draft, prepare_context(packet))
+        return call(verify)
 
     return api
 

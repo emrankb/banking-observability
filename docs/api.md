@@ -30,6 +30,7 @@ The server loads the same local files used by the command-line scripts. It neith
 | `POST /api/v1/knowledge/search` | FAISS runbook or incident-document search | `{"query":"network timeout latency"}` |
 | `GET /api/v1/incidents/{incident_id}/triage` | Triage an original historical incident record | supplied incident ID, e.g. `INC000136` |
 | `POST /api/v1/investigations` | Run local LangGraph evidence-only investigation | `{"as_of":"2025-10-25T18:01:00","question":"network timeout latency"}` |
+| `POST /api/v1/investigations/check-draft` | Validate a locally imported model draft against a freshly assembled investigation; no external request | `{"as_of":"...","question":"...","draft":{...}}` |
 
 All `as_of`, `start`, and `end` values use complete ISO dates and times, such as `2025-10-25T18:01:00`, without offsets or fractional seconds. Lists are bounded. `GET /metrics` returns the **latest** `limit` rows in the requested interval, with `older_matching_rows_omitted` indicating truncation; it never invents missing readings.
 
@@ -66,3 +67,5 @@ The following suite also requires the saved anomaly detector, incident-triage mo
 ```
 
 The first suite covers HTTP request validation, recorded metrics, and saved forecasts. The integration suite exercises the saved detectors, log classifier, FAISS index, and local LangGraph route. Neither measures service throughput, public-endpoint security, or live monitoring.
+
+The optional draft-check endpoint accepts JSON from a consent-gated CLI run and reconstructs citations from source records. It cannot generate a model answer or certify the truth of a claim. See `docs/incident_generation.md`.

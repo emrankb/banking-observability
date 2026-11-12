@@ -80,3 +80,7 @@ After both suites pass, start the two servers and check the browser views and
 `http://127.0.0.1:8000/api/v1/health`. These checks do not measure browser
 performance, public-endpoint security, or production data delivery. Docker
 Compose and deployment remain separate work.
+
+## Optional model draft import
+
+The incident replay view can accept a JSON file produced by `scripts/ask_incident.py` in its explicitly authorized external-model mode. Streamlit checks the imported file with the local API and shows the cited observations, possible explanations, suggested checks, and uncertainty. This does not enable external model requests from the dashboard. See `docs/incident_generation.md`.
