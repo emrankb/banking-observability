@@ -50,7 +50,7 @@ The five views are:
 | Forecasts | Saved five-minute processing-time, resource, and payment success-rate point predictions |
 | Log explorer | Recent normalized logs, exact-template event labels, and message classification |
 | Runbooks | Lexical retrieval from the local FAISS index, with file/line references |
-| Incident replay | Anomaly review flags and a cited LangGraph evidence briefing for the selected recorded minute |
+| Incident replay | Anomaly review flags, the local LangGraph evidence briefing, and optional import of a separately generated explanation |
 
 **Incident replay is not fault injection.** Move through recorded minutes to
 inspect the monitoring readings and log classifications at each point. It does
@@ -58,10 +58,7 @@ not alter the CSVs or manufacture failures. At
 `2025-10-25 18:01:00`, the anomaly detector requests review and the briefing
 includes the observed monitoring, recent logs, and retrieved runbooks.
 
-The assistant route is **evidence-only**. `root_cause`, `resolution`, and
-`model_explanation` remain unset. Forecasts are point readings at `t+5`, not
-probabilities or prediction intervals. Runbook similarity is lexical and does
-not confirm that an incident occurred or establish its cause.
+The API's investigation route stays **evidence-only**: `root_cause`, `resolution`, and `model_explanation` remain unset in that response. A model draft generated separately with `scripts/ask_incident.py` can be imported and checked in Incident replay. The imported text does not establish a cause or resolution. Forecasts are point readings at `t+5`, not probabilities or prediction intervals. Runbook similarity is lexical and does not confirm an incident.
 
 ## Verification
 
@@ -76,11 +73,8 @@ boundaries, source values, and responses. The second additionally needs
 Streamlit, the saved anomaly and log models, the FAISS knowledge index, and
 the local LangGraph workflow. There is no external model call in either suite.
 
-After both suites pass, start the two servers and check the browser views and
-`http://127.0.0.1:8000/api/v1/health`. These checks do not measure browser
-performance, public-endpoint security, or production data delivery. Docker
-Compose and deployment remain separate work.
+After both suites pass, start the two servers and check the browser views and `http://127.0.0.1:8000/api/v1/health`. The Docker Compose deployment is described in `docs/deployment.md`. The private Docker dashboard and all five views have also been checked in a Codespace. These checks do not measure production data delivery, public-endpoint security, or browser performance.
 
 ## Optional model draft import
 
-The incident replay view can accept a JSON file produced by `scripts/ask_incident.py` in its explicitly authorized external-model mode. Streamlit checks the imported file with the local API and shows the cited observations, possible explanations, suggested checks, and uncertainty. This does not enable external model requests from the dashboard. See `docs/incident_generation.md`.
+The incident replay view can accept a JSON file produced by `scripts/ask_incident.py` in its explicitly authorized external-model mode. Streamlit checks the imported file with the local API and shows the cited observations, possible explanations, suggested checks, and uncertainty. A live draft for `2025-10-25 18:01:00` was generated and displayed in the Codespaces dashboard. Importing the file does not make an external model request. See `docs/incident_generation.md`.

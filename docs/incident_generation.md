@@ -48,6 +48,6 @@ The integration suite loads the saved anomaly, log, and FAISS artifacts and must
 .venv/bin/python tests/test_incident_draft_integration.py
 ```
 
-The integration suite tests only locally constructed, source-backed validation cases. **It does not make a remote model request**, so it cannot establish that the model API will respond successfully, that a particular model supports the requested schema, or that its text will be accurate. To demonstrate live generation, run the explicit CLI command above with approved data, inspect its actual output, and verify its import in the browser.
+The integration suite uses locally constructed, source-backed cases and makes **no remote API request**. Separately, one live `gpt-5.4-mini` request for `2025-10-25 18:01:00` returned a structured explanation that passed the CLI checks, and its JSON was imported and displayed in Streamlit. That verifies the demonstrated integration, not the accuracy of explanations for other incidents. The model's suggestions and interpretations still need human review.
 
 The API and dashboard still have no authentication and are intended only for local or private access. This feature does not turn historical CSV replay into a live monitoring feed.
