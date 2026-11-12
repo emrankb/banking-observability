@@ -4,7 +4,8 @@ A project for investigating payment-channel performance, forecasting processing
 time, and explaining operational incidents from metrics and application logs.
 
 The repository includes dataset inspection, relationship checks, five-minute
-processing-time forecasts, incident-record triage, and monitoring anomaly checks.
+processing-time forecasts, incident-record triage, monitoring anomaly checks, and
+log grouping.
 There is no API or dashboard yet.
 
 ## Development environment
@@ -180,3 +181,36 @@ Incident triage uses the supplied snapshot labels, whose KPI discrepancies limit
 transfer to monitoring alerts. An anomaly flag requests review; it is not a
 confirmed failure or root cause. See `docs/detection.md` and
 `notebooks/03_incident_detection.ipynb` for the comparisons.
+
+## Log clustering
+
+Train on the earlier messages in `application_logs.csv`, using the monitoring
+training cutoff:
+
+```bash
+.venv/bin/python scripts/train_logs.py --data-dir data/raw
+.venv/bin/python tests/test_logs.py --data-dir data/raw
+```
+
+The comparison uses TF-IDF and KMeans on distinct normalized patterns, with
+several cluster counts and seeds. Reports go to `reports/logs/`; the saved
+vectorizer, centroids, and template catalog go to `models/log_clustering/`.
+Existing runs are not overwritten. Use `--model-dir` and `--report-dir` with
+new paths for another run.
+
+Read `reports/logs/log_review.md` for group contents and examples. The notebook
+`notebooks/04_log_clustering.ipynb` recalculates scores and displays the messages
+in each group. Select the `.venv` kernel and run all cells after training.
+Save executed copies outside Git.
+
+Inspect an original CSV record with the saved artifact:
+
+```bash
+.venv/bin/python scripts/classify_log.py --csv-row 3
+```
+
+Row numbers include the CSV header as row 1. The response keeps text grouping
+separate from the event type and category assigned by `config/log_patterns.json`.
+Unseen patterns stay `unreviewed`; similarity to a known message is not enough
+to assign its label. `label_review_required` concerns wording and input quality,
+not whether a monitoring incident is occurring. See `docs/logs.md` for details.

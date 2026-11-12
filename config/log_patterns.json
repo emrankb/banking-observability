@@ -1,0 +1,91 @@
+{
+  "format_version": 1,
+  "description": "Routing names for the supplied log wording. Categories are explicit rules, not labels learned by clustering.",
+  "patterns": [
+    {
+      "template": "api rate limit exceeded for endpoint /api/transactions",
+      "event_type": "api_rate_limit",
+      "category": "infrastructure"
+    },
+    {
+      "template": "cache refresh completed in <num>ms",
+      "event_type": "cache_refresh",
+      "category": "routine"
+    },
+    {
+      "template": "container <host_id> restarting due to oom",
+      "event_type": "container_oom_restart",
+      "category": "infrastructure"
+    },
+    {
+      "template": "customer authentication failed. user id: <user_id>",
+      "event_type": "authentication_failure",
+      "category": "business_kpi"
+    },
+    {
+      "template": "database backup completed successfully",
+      "event_type": "database_backup",
+      "category": "routine"
+    },
+    {
+      "template": "database connection pool exhausted. connections: <num>",
+      "event_type": "database_pool_exhaustion",
+      "category": "infrastructure"
+    },
+    {
+      "template": "disk i/o bottleneck detected on <host_id>",
+      "event_type": "disk_io_bottleneck",
+      "category": "infrastructure"
+    },
+    {
+      "template": "duplicate transaction detected. transaction id: <txn_id>",
+      "event_type": "duplicate_transaction",
+      "category": "business_kpi"
+    },
+    {
+      "template": "high cpu utilization detected on server <host_id>. current: <num>%",
+      "event_type": "high_cpu",
+      "category": "infrastructure"
+    },
+    {
+      "template": "imps transaction failed. transaction id: <txn_id>. reason: invalid account",
+      "event_type": "imps_invalid_account",
+      "category": "business_kpi"
+    },
+    {
+      "template": "memory usage approaching threshold on <host_id>. current: <num>%",
+      "event_type": "memory_threshold_warning",
+      "category": "infrastructure"
+    },
+    {
+      "template": "neft transaction failed. transaction id: <txn_id>. reason: gateway timeout",
+      "event_type": "neft_gateway_timeout",
+      "category": "business_kpi"
+    },
+    {
+      "template": "network timeout on <host_id>. latency: <num>ms",
+      "event_type": "network_timeout",
+      "category": "infrastructure"
+    },
+    {
+      "template": "payment gateway response time exceeded sla. time: <num>ms",
+      "event_type": "payment_gateway_sla_warning",
+      "category": "business_kpi"
+    },
+    {
+      "template": "rtgs transaction failed. transaction id: <txn_id>. reason: insufficient funds",
+      "event_type": "rtgs_insufficient_funds",
+      "category": "business_kpi"
+    },
+    {
+      "template": "transaction processed successfully. id: <txn_id>",
+      "event_type": "transaction_success",
+      "category": "routine"
+    },
+    {
+      "template": "user login successful. user id: <user_id>",
+      "event_type": "login_success",
+      "category": "routine"
+    }
+  ]
+}
