@@ -1,4 +1,4 @@
--r requirements-retrieval.txt
+-r requirements-assistant.txt
 matplotlib==3.10.8
 nbformat==5.10.4
 nbclient==0.10.4
