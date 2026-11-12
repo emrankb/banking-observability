@@ -3,8 +3,8 @@
 A project for investigating payment-channel performance, forecasting processing
 time, and explaining operational incidents from metrics and application logs.
 
-The repository currently includes dataset inspection and relationship checks.
-Forecasting code is being imported separately. There is no API or dashboard yet.
+The repository includes dataset inspection, relationship checks, and a
+five-minute processing-time forecasting experiment. There is no API or dashboard yet.
 
 ## Development environment
 
@@ -73,6 +73,48 @@ are descriptive and do not establish a root cause.
 These commands preserve the original CSVs and do not train a model. Some output
 files contain individual records, so leave `reports/` outside version control.
 
+## Forecasting
+
+The forecast target is the single `avg_transaction_processing_time_ms` reading
+five minutes after the origin. It is not a five-minute average or endpoint
+latency. The comparison uses historical lags, trailing-window features, and known
+calendar inputs. Models are selected using expanding chronological validation,
+then compared on the supplied test period without refitting.
+
+The training and test infrastructure CSVs must be in `data/raw/`. Train locally
+in the workspace and generate the report:
+
+```bash
+.venv/bin/python scripts/train_forecast.py --data-dir data/raw
+.venv/bin/python scripts/write_forecast_report.py --data-dir data/raw
+```
+
+An existing checkpoint is not replaced unless `--overwrite` is passed to the
+training command. Reports go to `reports/forecast/`; the selected artifact and
+learned comparators go to `models/latency_5min/`. They remain outside Git.
+
+Open `reports/forecast/forecast_review.md` for the scores and
+`notebooks/02_latency_forecasting.ipynb` for the walkthrough. Select the `.venv`
+kernel and run all cells after training; committed notebook outputs are empty.
+`docs/forecasting.md` explains the target, folds, and modeling decisions.
+
+Load the saved artifact for a historical replay origin:
+
+```bash
+.venv/bin/python scripts/predict_forecast.py --history data/raw/infrastructure_metrics.csv --as-of "2025-10-25 14:24:00"
+```
+
+This predicts the 14:29 reading using only history through 14:24. Inference
+rejects an origin at or before the artifact's training-target cutoff. The shared
+interface requires 1,441 consecutive minute readings. Only load trusted joblib
+artifacts; their checksums do not make untrusted deserialization safe.
+
+Baselines are eligible to win and are identified as baselines, not learned
+estimators. Validation ranking determines the serving candidate. Discovery
+already inspected the full monitoring interval, so the test split is not an
+unseen discovery holdout. These are point forecasts, not calibrated prediction
+intervals or evidence of future-incident detection.
+
 ## Tests
 
 ```bash
@@ -85,5 +127,16 @@ compare two independent runs. No saved reports are required. Expected row
 counts and anomaly counts describe the supplied files; changed inputs require
 reviewing those expectations rather than altering the data to pass the tests.
 
+After training, run the forecasting suite:
+
+```bash
+.venv/bin/python tests/test_forecasting.py --data-dir data/raw
+```
+
+It checks causal feature construction, label boundaries, saved-model loading,
+command-line inference, and score reproduction. It retrains the full experiment
+in a temporary directory and compares the resulting predictions. Run the notebook
+separately; the test suite checks its source and output hygiene, not cell execution.
+
 The environment checker verifies package versions and imports only. Neither
-it nor the discovery tests verify a model or application deployment.
+these scripts nor the notebooks verify application deployment.
