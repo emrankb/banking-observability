@@ -1,0 +1,2 @@
+-r requirements-forecast.txt
+faiss-cpu==1.13.2

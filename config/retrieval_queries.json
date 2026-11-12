@@ -1,0 +1,21 @@
+{
+  "description": "Authored checks for the indexed topics, not an independent retrieval benchmark. Expected documents are reviewed source choices.",
+  "top_k": 3,
+  "min_similarity": 0.15,
+  "queries": [
+    {"query": "NEFT transaction gateway timeout", "expected_document": "runbook:neft_gateway_timeout"},
+    {"query": "IMPS transaction invalid account", "expected_document": "runbook:imps_invalid_account"},
+    {"query": "RTGS insufficient funds", "expected_document": "runbook:rtgs_insufficient_funds"},
+    {"query": "duplicate transaction idempotency", "expected_document": "runbook:duplicate_transaction"},
+    {"query": "customer authentication failed", "expected_document": "runbook:authentication_failure"},
+    {"query": "payment gateway response time SLA", "expected_document": "runbook:payment_gateway_sla_warning"},
+    {"query": "database connection pool exhausted", "expected_document": "runbook:database_pool_exhaustion"},
+    {"query": "high CPU utilization server", "expected_document": "runbook:high_cpu"},
+    {"query": "memory usage threshold warning", "expected_document": "runbook:memory_threshold_warning"},
+    {"query": "container restarting due to OOM", "expected_document": "runbook:container_oom_restart"},
+    {"query": "network timeout latency", "expected_document": "runbook:network_timeout"},
+    {"query": "API rate limit exceeded", "expected_document": "runbook:api_rate_limit"},
+    {"query": "disk I/O bottleneck", "expected_document": "runbook:disk_io_bottleneck"},
+    {"query": "telescope orbital galaxy", "expected_document": null}
+  ]
+}

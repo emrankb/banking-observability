@@ -1,4 +1,4 @@
-"""Check the Python and package versions used by the forecasting checkpoint."""
+"""Check the Python and package versions used by the project."""
 from __future__ import annotations
 
 import importlib
@@ -59,7 +59,7 @@ def main() -> int:
             if installed != expected:
                 failures.append(f"{name}: expected {expected}, found {installed}")
                 continue
-            importlib.import_module("sklearn" if name == "scikit-learn" else name)
+            importlib.import_module({"scikit-learn": "sklearn", "faiss-cpu": "faiss"}.get(name, name))
             print(f"{name}=={installed}: import OK")
         except Exception as error:
             failures.append(f"{name}: {type(error).__name__}: {error}")
