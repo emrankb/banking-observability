@@ -5,8 +5,8 @@ time, and explaining operational incidents from metrics and application logs.
 
 The repository includes dataset inspection, relationship checks, five-minute
 processing-time forecasts, incident-record triage, monitoring anomaly checks, and
-log grouping.
-There is no API or dashboard yet.
+log grouping, and local knowledge retrieval.
+There is no incident-generation assistant, API, or dashboard yet.
 
 ## Development environment
 
@@ -214,3 +214,49 @@ separate from the event type and category assigned by `config/log_patterns.json`
 Unseen patterns stay `unreviewed`; similarity to a known message is not enough
 to assign its label. `label_review_required` concerns wording and input quality,
 not whether a monitoring incident is occurring. See `docs/logs.md` for details.
+
+## Knowledge retrieval
+
+Add the original `incident_knowledge_base.txt` to `data/raw/`. The index also uses
+`incident_reports.csv` and `infrastructure_metrics_train.csv`, plus the project
+investigation notes in `knowledge/runbooks.md`.
+
+Install the retrieval dependency in an existing workspace:
+
+```bash
+.venv/bin/python -m pip install -r requirements-retrieval.txt
+```
+
+New Codespaces install it through `requirements-notebook.txt`. The added package
+is `faiss-cpu==1.13.2`; existing scientific-package versions are unchanged.
+
+Check the sources and build the index:
+
+```bash
+.venv/bin/python scripts/inspect_knowledge.py --data-dir data/raw
+.venv/bin/python scripts/build_knowledge.py --data-dir data/raw
+.venv/bin/python scripts/search_knowledge.py --query "NEFT transaction gateway timeout"
+.venv/bin/python scripts/evaluate_retrieval.py --data-dir data/raw
+```
+
+Source inspection writes `reports/knowledge_sources/`. The FAISS index and encoder
+are saved in `models/knowledge/`; query-check results go to `reports/retrieval/`.
+Existing directories are not overwritten. Use new `--output-dir` or `--index-dir`
+paths for a new run. These files remain outside Git.
+
+Search returns source passages and citations, not a generated answer. Vectors are
+local TF-IDF features, not neural embeddings. The default search covers runbooks;
+use `--source-kind incident_snapshot` to search incident cards. Those cards retain
+conflicting KPIs and do not supply missing causes or resolutions.
+
+Run both test suites:
+
+```bash
+.venv/bin/python tests/test_knowledge_sources.py --data-dir data/raw
+.venv/bin/python tests/test_retrieval.py --data-dir data/raw
+```
+
+The source suite does not require FAISS. The retrieval suite requires the actual
+native index and fails when the package is unavailable. Run
+`notebooks/05_knowledge_retrieval.ipynb` after building the index to inspect results
+and source references. See `docs/retrieval.md` for the cutoff and search limits.
