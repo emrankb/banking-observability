@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Check cited briefing contracts against the original monitoring CSV."""
 import argparse
+import json
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 from pathlib import Path
 import sys
 import unittest
@@ -10,6 +13,7 @@ sys.path.insert(0,str(ROOT))
 from banking_observability.incident_evidence import read_evidence
 from banking_observability.incident_assistant import (
     response_schema, check_generated_reply, briefing_from_context, run_assistant,
+    openai_explanation,
     prepare_context,
 )
 
@@ -51,6 +55,52 @@ class ContextTests(unittest.TestCase):
         self.assertEqual(set(schema['properties']),set(schema['required']))
         self.assertNotIn('root_cause',schema['properties'])
         self.assertFalse(schema['additionalProperties'])
+
+
+    def test_schema_limits_match_local_validation(self):
+        schema = response_schema()
+        for field in ("observations", "hypotheses", "next_checks"):
+            with self.subTest(field=field):
+                values = schema["properties"][field]
+                self.assertEqual(values["maxItems"], 5)
+                references = values["items"]["properties"]["evidence_ids"]
+                self.assertEqual(references["minItems"], 1)
+                self.assertEqual(references["maxItems"], 4)
+
+    def test_all_claim_lists_reject_more_than_five_entries(self):
+        example = self.response()["observations"][0]
+        for field in ("observations", "hypotheses", "next_checks"):
+            with self.subTest(field=field):
+                response = self.response()
+                response[field] = [dict(example) for _ in range(6)]
+                with self.assertRaisesRegex(ValueError, "no more than five"):
+                    check_generated_reply(response, self.context)
+
+    def test_claim_rejects_more_than_four_evidence_ids(self):
+        response = self.response()
+        response["observations"][0]["evidence_ids"] = [
+            self.mid, "metric:a", "metric:b", "metric:c", "metric:d",
+        ]
+        with self.assertRaisesRegex(ValueError, "1–4 distinct"):
+            check_generated_reply(response, self.context)
+
+    def test_remote_request_uses_bounded_schema_without_network(self):
+        client = Mock()
+        client.responses.create.return_value = SimpleNamespace(
+            status="completed", output_text=json.dumps(self.response()),
+        )
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "offline-test-placeholder"}):
+            with patch("openai.OpenAI", return_value=client):
+                explanation = openai_explanation(
+                    self.context, model="offline-test-model", send_external=True,
+                )
+        self.assertEqual(explanation, self.response())
+        settings = client.responses.create.call_args.kwargs
+        self.assertEqual(settings["text"]["format"]["schema"], response_schema())
+        self.assertTrue(settings["text"]["format"]["strict"])
+        self.assertFalse(settings["store"])
+        self.assertIn("at most five", settings["instructions"])
+        self.assertIn("one to four distinct", settings["instructions"])
 
     def test_real_metric_reference_passes_validation(self):
         result=check_generated_reply(self.response(),self.context)
