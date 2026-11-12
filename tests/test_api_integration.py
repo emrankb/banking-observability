@@ -134,10 +134,15 @@ class APIIntegrationTests(unittest.TestCase):
             'allow_external_data':True})
         self.assertEqual(reply.status_code, 422)
 
-    def test_retrieval_refuses_index_cutoff_or_earlier(self):
-        reply = self.client.post('/api/v1/knowledge/search', json={
+    def test_retrieval_rejects_before_cutoff_and_allows_cutoff(self):
+        earlier = self.client.post('/api/v1/knowledge/search', json={
+            'query':'network timeout latency','as_of':'2025-10-25T14:22:00'})
+        self.assertEqual(earlier.status_code, 422, earlier.text)
+        at_cutoff = self.client.post('/api/v1/knowledge/search', json={
             'query':'network timeout latency','as_of':'2025-10-25T14:23:00'})
-        self.assertEqual(reply.status_code, 422)
+        self.assertEqual(at_cutoff.status_code, 200, at_cutoff.text)
+        self.assertEqual(at_cutoff.json()['as_of'], '2025-10-25T14:23:00')
+        self.assertEqual(at_cutoff.json()['knowledge_cutoff'], '2025-10-25T14:23:00')
 
     def test_missing_incident_record_is_rejected(self):
         reply = self.client.get('/api/v1/incidents/INC999999/triage')
