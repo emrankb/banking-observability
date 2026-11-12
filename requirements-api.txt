@@ -1,0 +1,4 @@
+-r requirements-assistant.txt
+fastapi==0.128.2
+uvicorn==0.48.0
+httpx==0.28.1

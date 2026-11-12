@@ -4,9 +4,10 @@ A project for investigating payment-channel performance, forecasting processing
 time, and explaining operational incidents from metrics and application logs.
 
 The repository includes dataset inspection, relationship checks, five-minute
-processing-time forecasts, incident-record triage, monitoring anomaly checks, and
-log grouping, local knowledge retrieval, and incident evidence assembly.
-There is no language-model incident assistant, API, or dashboard yet.
+processing-time and KPI forecasts, incident triage, anomaly detection, log
+grouping, local knowledge retrieval, and incident evidence assembly.
+The API serves local historical replay. There is no live feed, Streamlit
+dashboard, or deployed service yet.
 
 ## Development environment
 
@@ -343,3 +344,23 @@ Six selected artifacts go under `models/kpi_5min/`, with comparisons in
 `reports/kpi_forecast/`. Existing outputs are not overwritten. The results are
 point readings with MAE in percentage points, not calibrated risk forecasts.
 See `docs/kpi_forecasting.md` and `notebooks/08_kpi_forecasting.ipynb`.
+
+## Historical monitoring API
+
+The FastAPI service exposes recorded KPI series, saved forecasting and monitoring
+inference, normalized log labels, local knowledge search, and evidence-only
+investigations. It uses the same ignored data and model artifacts as the CLI
+scripts. This is not a live monitoring service.
+
+```bash
+.venv/bin/python -m pip install -r requirements-api.txt
+.venv/bin/python tests/test_api.py
+.venv/bin/python tests/test_api_integration.py
+.venv/bin/python scripts/serve_api.py
+```
+
+The server binds to `127.0.0.1:8000`. It has no authentication and should not
+be exposed to a public network. Check `/api/v1/health` for local artifact
+presence, and `/openapi.json` for request/response schemas. Read `docs/api.md`
+for endpoint examples and limits. The API does not call an external language
+model; remote generation, Streamlit, and Docker are separate checkpoints.
