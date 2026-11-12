@@ -50,7 +50,21 @@ BANKING_API_PORT=18080 BANKING_DASHBOARD_PORT=18580 docker compose up --build --
 
 ## Inspect and stop
 
-If the build fails, check the Docker Engine and dependency-install output. If a service is unhealthy, inspect `docker compose ps` and `docker compose logs --tail=100 api dashboard`. Check that the files are readable by the unprivileged container user and that model-code, package-version, and source checksums match the saved artifacts. Health checks do not retrain or repair anything.
+If the build fails, check the Docker Engine and dependency-install output. If a service is unhealthy, inspect `docker compose ps` and `docker compose logs --tail=100 api dashboard`. The container runs as UID `10001`. In Codespaces, directories created by the `vscode` user can prevent that UID from traversing the bind-mounted model files, even when the files themselves are readable. If the API logs show `PermissionError` under `/app/models/` or `/app/data/raw/`, inspect the host directory permissions with:
+
+```bash
+namei -l models/detection/monitoring_anomaly/metadata.json
+```
+
+On a dedicated Codespace, grant the container UID read access and directory traversal using ACLs:
+
+```bash
+sudo apt-get update && sudo apt-get install -y acl
+setfacl -R -m u:10001:rX models data/raw
+docker compose up --detach --wait
+```
+
+This does not make the mounted files writable to the container. It changes permissions on the host files, so review access requirements before applying it on a shared machine. Do not use `chmod -R 777`. Check model-code, package-version, and source checksums separately if permission errors are resolved but an endpoint still fails. Health checks do not retrain or repair anything.
 
 To stop and remove the two containers:
 
