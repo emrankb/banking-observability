@@ -3,8 +3,9 @@
 A project for investigating payment-channel performance, forecasting processing
 time, and explaining operational incidents from metrics and application logs.
 
-The repository includes dataset inspection, relationship checks, and a
-five-minute processing-time forecasting experiment. There is no API or dashboard yet.
+The repository includes dataset inspection, relationship checks, five-minute
+processing-time forecasts, incident-record triage, and monitoring anomaly checks.
+There is no API or dashboard yet.
 
 ## Development environment
 
@@ -140,3 +141,42 @@ separately; the test suite checks its source and output hygiene, not cell execut
 
 The environment checker verifies package versions and imports only. Neither
 these scripts nor the notebooks verify application deployment.
+
+## Incident triage and anomaly detection
+
+Train both detectors from the original incident reports and monitoring train/test
+files already in `data/raw/`:
+
+```bash
+.venv/bin/python scripts/train_detection.py --data-dir data/raw
+```
+
+Artifacts are saved under `models/detection/` and the report is written to
+`reports/detection/detection_review.md`. Existing output directories are not
+overwritten; use `--model-dir` and `--report-dir` with new paths for another run.
+The `--review-fraction` option controls the calibration-tail review budget for
+monitoring anomalies; its default is 0.01, not an assumed failure prevalence.
+
+Run the data-dependent checks:
+
+```bash
+.venv/bin/python tests/test_detection.py --data-dir data/raw
+```
+
+The suite trains temporary runs and checks both saved detectors, temporal
+features, threshold calculation, report values, and invalid inputs. It does not
+modify your saved models or the original CSVs.
+
+Inspect an incident record or a monitoring minute:
+
+```bash
+.venv/bin/python scripts/score_incident.py --incident-id INC000136
+.venv/bin/python scripts/score_anomalies.py \
+  --history data/raw/infrastructure_metrics.csv \
+  --as-of "2025-10-25 18:01:00"
+```
+
+Incident triage uses the supplied snapshot labels, whose KPI discrepancies limit
+transfer to monitoring alerts. An anomaly flag requests review; it is not a
+confirmed failure or root cause. See `docs/detection.md` and
+`notebooks/03_incident_detection.ipynb` for the comparisons.
