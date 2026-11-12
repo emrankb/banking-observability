@@ -8,7 +8,7 @@ The LangGraph workflow calls the existing investigation code, which reads the sa
 
 In local mode, `reduce` goes straight to `finalize`, returning the monitoring values, log and runbook references, and the detector's review flag. No API request is made.
 
-With a model selected, `generate` asks the OpenAI Responses API for a structured draft, and `finalize` checks its fields and evidence IDs. The response separates observations, possible causes, next checks, and uncertainty. Claims have source links, but an ID match cannot establish the correctness of the claim. Treat model output as an analyst draft that needs review.
+With a model selected, `generate` asks the OpenAI Responses API for a structured draft, and `finalize` checks its fields and evidence IDs. The response separates observations, possible causes, next checks, and uncertainty. Claims have source links, but an ID match cannot establish the correctness of the claim. Treat model output as an analyst draft that needs review. The response schema limits each of the three claim lists to five entries and each entry to one to four evidence IDs; the request instructions repeat those limits. The validator still rejects oversized, uncited, or otherwise malformed results rather than silently trimming claims. Failed calls are not retried automatically and may still incur usage charges.
 
 ## Run locally
 
